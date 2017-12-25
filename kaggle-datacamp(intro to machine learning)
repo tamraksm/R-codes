@@ -1,0 +1,355 @@
+# R-codes
+R-codes for basic machine learning, big data and other 
+##  Once you're familiar with the Kaggle data sets, you make your first predictions
+##  using survival rate, gender data, as well as age data.
+
+
+# Import the training set: train
+
+train_url <- "http://s3.amazonaws.com/assets.datacamp.com/course/Kaggle/train.csv"
+train <-read.csv(train_url)
+train
+# Import the testing set: test
+test_url <- "http://s3.amazonaws.com/assets.datacamp.com/course/Kaggle/test.csv"
+test <-read.csv(test_url)
+test
+
+#understanding your data
+
+str(test)
+str(train)
+
+# Survival rates in absolute numbers
+table(train$Survived)
+#  0   1 
+# 549 342
+
+# Survival rates in proportions
+prop.table(table(train$Survived))
+#   0         1 
+# 0.6161616 0.3838384 
+
+# Two-way comparison: Sex and Survived
+table(train$Sex, train$Survived)
+
+#         0   1
+# female  81 233
+# male   468 109
+# Two-way comparison: row-wise proportions
+
+prop.table(table(train$Sex, train$Survived),1)
+
+#             0         1
+# female 0.2579618 0.7420382
+# male   0.8110919 0.1889081
+
+# Create the column child, and indicate whether child or no child
+train$Child <- NA
+train$Child[train$Age < 18] <- 1
+train$Child[train$Age >= 18] <- 0
+
+# Two-way comparison
+prop.table(table(train$Child, train$Survived), 1)
+#       0         1
+# 0 0.6189684 0.3810316
+# 1 0.4601770 0.5398230
+
+# In one of the previous exercises you discovered that in your training set, 
+# females had over a 50% chance of surviving and males had less than a 50%
+# chance of surviving. Hence, you could use this information for your first prediction:
+# all females in the test set survive and all males in the test set die.
+
+# You use your test set for validating your predictions. You might have seen that, 
+# contrary to the training set, the test set has no Survived column. You add such a 
+# column using your predicted values. Next, when uploading your results, Kaggle will
+# use this column (= your predictions) to score your performance.
+
+# Copy of test
+test_one <- test
+
+# Initialize a Survived column to 0
+test_one$Survived <- 0
+
+# Set Survived to 1 if Sex equals "female"
+test_one$Survived[test$Sex == "female"] <- 1
+
+library(rpart)
+
+
+##  Creating your first decision tree
+
+# Build the decision tree
+my_tree_two <- rpart(Survived ~ Pclass + Sex + Age +
+                       SibSp + Parch + Fare + Embarked, data = train, method = "class")
+
+# Visualize the decision tree using plot() and text()
+plot(my_tree_two)
+text(my_tree_two)
+
+# Load in the packages to build a fancy plot
+library(rattle)
+library(rpart.plot)
+
+#plot in R
+fancyRpartPlot(my_tree_two)
+
+# Make predictions on the test set
+my_prediction <- predict(my_tree_two, newdata = test, type = "class")
+
+# Finish the data.frame() call
+my_solution <- data.frame(PassengerId = test$PassengerId, Survived = my_prediction)
+
+# Use nrow() on my_solution
+nrow(my_solution)
+
+# Finish the write.csv() call
+write.csv(my_solution, file = "my_solution.csv", row.names = FALSE)
+
+# cp determines when the splitting up of the decision tree stops.
+# minsplit determines the minimum amount of observations in a leaf of the tree.
+super_model <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+                     data = train, method = "class", control = rpart.control
+                     (minsplit = 2, cp = 0))
+
+# Visualize my_tree_three
+fancyRpartPlot(super_model)
+
+# Looking complex, but using this model to make predictions won't give you a good 
+# score on Kaggle. Why? Because you created very specific rules based on the data 
+# in the training set. These very detailed rules are only relevant for the training 
+# set but cannot be generalized to unknown sets. You overfitted your tree. Always be
+# aware of this danger!
+
+
+# Create train_two
+train_two <- train
+train_two$family_size <- train$SibSp + train$Parch + 1
+
+# Finish the command
+my_tree_four <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked 
+                      + family_size,data = train_two, method = "class")
+
+# Visualize your new decision tree
+fancyRpartPlot(my_tree_four)
+
+title<-c( 'Mr','Mrs','Miss','Mrs','Mr','Mr','Mr','Master','Mrs','Mrs',
+          'Miss','Miss','Mr','Mr','Miss','Mrs','Master','Mr','Mrs','Mrs',
+          'Mr','Mr','Miss','Mr','Miss','Mrs','Mr','Mr','Miss','Mr',
+          'Sir','Mrs','Miss','Mr','Mr','Mr','Mr','Mr','Miss','Miss',
+          'Mrs','Mrs','Mr','Miss','Miss','Mr','Mr','Miss','Mr','Mrs',
+          'Master','Mr','Mrs','Mrs','Mr','Mr','Miss','Mr','Miss','Master',
+          'Mr','Miss','Mr','Master','Mr','Master','Mrs','Mr','Miss','Mr',
+          'Mr','Miss','Mr','Mr','Mr','Mr','Mr','Mr','Master','Miss',
+          'Mr','Mr','Miss','Mr','Miss','Mrs','Mr','Mr','Miss','Mr',
+          'Mr','Mr','Mr','Mr','Mr','Mr','Mr','Mr','Mrs','Mr',
+          'Miss','Mr','Mr','Mr','Mr','Mr','Miss','Mr','Mr','Miss',
+          'Mr','Miss','Mr','Miss','Miss','Mr','Mr','Mr','Mr','Miss',
+          'Mr','Mr','Mr','Miss','Mr','Master','Mr','Mr','Miss','Mr',
+          'Mr','Mr','Mrs','Mrs','Mr','Mr','Miss','Mr','Mr','Mr',
+          'Mrs','Miss','Mrs','Mr','Mr','Mr','Mr','Miss','Mr','Rev',
+          'Rev','Mrs','Mr','Mr','Mr','Mr','Miss','Mr','Mr','Master',
+          'Mr','Mrs','Mr','Mr','Master','Master','Mrs','Mrs','Mr','Mr',
+          'Mr','Master','Miss','Mr','Mr','Mr','Master','Miss','Mr','Mr',
+          'Miss','Mr','Master','Master','Miss','Mr','Mrs','Mr','Mr','Mr',
+          'Mrs','Mr','Miss','Master','Mrs','Miss','Mr','Mr','Miss','Miss',
+          'Mr','Mr','Mr','Mr','Mr','Miss','Mr','Mr','Miss','Mr',
+          'Mr','Miss','Mr','Mr','Mr','Miss','Miss','Mr','Miss','Mr',
+          'Mr','Mr','Mr','Mr','Mr','Mr','Mr','Mr','Mr','Miss',
+          'Mrs','Mr','Mr','Miss','Mr','Miss','Mr','Miss','Mr','Mr',
+          'Miss','Miss','Mr','Mr','Mr','Dr','Miss','Mrs','Mr','Rev',
+          'Mr','Mrs','Mr','Mr','Mrs','Mrs','Mrs','Miss','Miss','Mrs',
+          'Mr','Master','Mr','Mr','Miss','Mr','Mr','Mr','Mrs','Miss',
+          'Mr','Mr','Mrs','Mr','Miss','Miss','Miss','Mr','Master','Mrs',
+          'Mr','Mr','Mr','Mr','Mr','Mr','Mr','Mr','Mr','Miss',
+          'Miss','Mrs','Mr','Miss','Mr','Mr','Mr','Miss','Mr','Mrs',
+          'Miss','Mr','Mr','Miss','Mr','Master','Miss','Mrs','Mr','Miss',
+          'Miss','Miss','Mrs','Mr','Mr','Miss','Mrs','Dr','Miss','Mrs',
+          'Mr','Mr','Miss','Mrs','Mr','Miss','Mr','Mrs','Mrs','Miss',
+          'Miss','Mr','Mr','Mr','Mrs','Mr','Mr','Miss','Mr','Mr',
+          'Master','Miss','Mr','Mr','Mr','Miss','Miss','Mrs','Master','Mr',
+          'Mr','Mr','Mr','Mr','Mr','Mr','Miss','Miss','Miss','Miss',
+          'Mr','Mr','Mrs','Mr','Mr','Mr','Mrs','Mrs','Miss','Mlle',
+          'Mr','Mr','Mr','Mr','Miss','Mrs','Miss','Mr','Mr','Mr',
+          'Miss','Miss','Mr','Mrs','Mr','Mr','Master','Miss','Mr','Miss',
+          'Mr','Mr','Mr','Miss','Mrs','Mr','Miss','Mr','Dr','Mrs',
+          'Mr','Mr','Miss','Mr','Miss','Mr','Mr','Master','Mr','Miss',
+          'Mr','Mr','Miss','Mr','Mr','Mrs','Mrs','Miss','Mr','Miss',
+          'Mr','Mr','Mr','Mrs','Mr','Mr','Mrs','Miss','Mr','Mr',
+          'Mr','Mrs','Mrs','Mr','Mr','Miss','Miss','Mrs','Mr','Mr',
+          'Mrs','Mr','Mr','Ms','Mr','Master','Miss','Mr','Miss','Sir',
+          'Mr','Mr','Mr','Mr','Mr','Mr','Mr','Mrs','Miss','Mr',
+          'Mr','Mr','Mr','Mr','Mr','Mr','Mr','Mr','Mr','Miss',
+          'Mr','Mr','Mrs','Mrs','Miss','Mr','Mr','Mr','Mr','Miss',
+          'Master','Mr','Mr','Mrs','Mr','Miss','Mrs','Mr','Mr','Master',
+          'Mr','Mr','Mr','Mr','Mr','Mr','Miss','Mr','Mrs','Mr',
+          'Mr','Miss','Miss','Miss','Miss','Mr','Mrs','Mr','Mr','Mr',
+          'Mr','Mr','Mr','Mrs','Mr','Mr','Mrs','Mr','Mrs','Mr',
+          'Miss','Mr','Mr','Mrs','Mr','Mr','Miss','Mr','Mr','Mr',
+          'Miss','Mr','Mr','Mrs','Miss','Miss','Sir','Miss','Mr','Miss',
+          'Miss','Miss','Miss','Mr','Mr','Mr','Mrs','Mr','Mr','Master',
+          'Mr','Mr','Mr','Mr','Miss','Mr','Lady','Mr','Mrs','Mrs',
+          'Mr','Mr','Mr','Mr','Miss','Mr','Mr','Mrs','Mr','Mr',
+          'Mr','Mrs','Mr','Miss','Mr','Mr','Miss','Mrs','Mrs','Mr',
+          'Miss','Mrs','Mr','Mr','Mr','Miss','Mr','Mr','Mr','Mr',
+          'Mr','Mrs','Mr','Miss','Mr','Mr','Miss','Mr','Mr','Sir',
+          'Mrs','Mr','Mr','Mr','Mr','Mr','Mr','Mr','Mrs','Miss',
+          'Mrs','Mr','Miss','Mr','Mr','Miss','Mr','Mrs','Miss','Mr',
+          'Mr','Mr','Mr','Mr','Mr','Mr','Rev','Miss','Mr','Mr',
+          'Mr','Mr','Dr','Mr','Miss','Miss','Mr','Mr','Mrs','Mr',
+          'Mr','Mlle','Miss','Mr','Miss','Mr','Mr','Col','Mr','Miss',
+          'Mr','Miss','Mr','Miss','Miss','Mr','Mr','Mrs','Mr','Mr',
+          'Dr','Mr','Mr','Mr','Mr','Mr','Mr','Mr','Mr','Mrs',
+          'Mrs','Mr','Mr','Mr','Mr','Mr','Mr','Miss','Mrs','Mr',
+          'Miss','Mr','Mr','Mr','Mr','Mr','Mr','Mr','Mr','Miss',
+          'Mr','Miss','Mr','Mr','Col','Mr','Mr','Miss','Mr','Mr',
+          'Mrs','Mr','Miss','Mr','Mr','Mr','Mrs','Mr','Miss','Master',
+          'Mlle','Mr','Mr','Mr','Mr','Mr','Miss','Miss','Mr','Mr',
+          'Miss','Mr','Mr','Mr','Mr','Mr','Mrs','Miss','Mr','Miss',
+          'Miss','Mr','Mr','Mr','Mr','Mr','Mrs','Mr','Mr','Mr',
+          'Mr','Mr','Miss','Mr','Mr','Sir','Mr','Miss','Mr','Mr',
+          'Miss','Master','Mr','Mr','Mrs','Master','Mr','Mr','Mr','Lady',
+          'Mr','Mr','Mr','Mrs','Mr','Mrs','Dr','Miss','Mr','Mr',
+          'Mr','Mr','Mrs','Mr','Mrs','Mr','Mr','Miss','Mr','Mrs',
+          'Miss','Mrs','Mr','Mr','Mr','Mr','Miss','Master','Master','Mr',
+          'Mr','Mr','Miss','Mr','Mr','Mr','Dr','Mrs','Mr','Mrs',
+          'Mr','Mrs','Master','Master','Mr','Mr','Mr','Miss','Mr','Mrs',
+          'Mr','Mr','Mr','Miss','Mr','Mr','Miss','Mr','Mr','Master',
+          'Mrs','Mr','Lady','Mrs','Master','Mr','Mr','Master','Mr','Mrs',
+          'Mrs','Master','Mr','Mr','Mr','Miss','Mr','Mr','Mr','Mr',
+          'Mr','Mr','Miss','Mr','Mr','Mr','Mr','Mr','Rev','Mrs',
+          'Master','Mr','Miss','Miss','Mrs','Mrs','Mrs','Mr','Mrs','Mr',
+          'Mr','Mr','Mrs','Miss','Mr','Mrs','Miss','Mr','Mr','Master',
+          'Mr','Mrs','Mr','Mr','Mrs','Miss','Mr','Mr','Mr','Mrs',
+          'Mrs','Mr','Miss','Mr','Mr','Mrs','Rev','Miss','Miss','Mr',
+          'Mr')
+title<-c('Mr',  'Mrs', 'Mr',  'Mr',  'Mrs', 'Mr',  'Miss','Mr',  'Mrs', 'Mr', 
+         'Mr',  'Mr',  'Mrs', 'Mr',  'Mrs', 'Mrs', 'Mr',  'Mr',  'Miss','Mrs',
+         'Mr',  'Master', 'Mrs', 'Mr',  'Mrs', 'Mr',  'Miss','Mr',  'Mr',  'Mr', 
+         'Mr',  'Mr',  'Mrs', 'Mrs', 'Mr',  'Mr',  'Miss','Miss','Mr',  'Mr', 
+         'Mr',  'Mr',  'Mr',  'Mrs', 'Mrs', 'Mr',  'Mr',  'Mr',  'Mrs', 'Mrs',
+         'Mr',  'Mr',  'Miss','Miss','Mr',  'Master', 'Mr',  'Mr',  'Mr',  'Miss',  
+         'Mr',  'Mr',  'Mr',  'Miss','Master', 'Mrs', 'Miss','Mr',  'Mr',  'Mrs',
+         'Miss','Mr',  'Miss','Mr',  'Miss','Mr',  'Mr',  'Mrs', 'Mr',  'Miss',  
+         'Master', 'Mr',  'Mr',  'Mr',  'Mr',  'Mr',  'Miss','Miss','Ms',  'Master',
+         'Mrs', 'Mr',  'Mrs', 'Mr',  'Mr',  'Mr',  'Mrs', 'Mr',  'Miss','Mr', 
+         'Mrs', 'Mr',  'Mr',  'Mr',  'Mrs', 'Mr',  'Mr',  'Mr',  'Mr',  'Mr', 
+         'Mr',  'Miss','Miss','Miss','Mrs', 'Mr',  'Mr',  'Miss','Mr',  'Mrs',
+         'Miss','Mr',  'Mrs', 'Mr',  'Mr',  'Miss','Mr',  'Miss','Mr',  'Mr', 
+         'Mr',  'Col', 'Mrs', 'Mr',  'Mr',  'Mr',  'Mr',  'Mr',  'Miss','Mr', 
+         'Miss','Miss','Mr',  'Mr',  'Mr',  'Mr',  'Mr',  'Mr',  'Mr',  'Rev',
+         'Mrs', 'Mr',  'Mr',  'Mrs', 'Master', 'Mr',  'Miss','Miss','Mr',  'Mrs',
+         'Miss','Master', 'Miss','Mr',  'Rev', 'Mrs', 'Mr',  'Mr',  'Mrs', 'Miss',  
+         'Mr',  'Mr',  'Mr',  'Mr',  'Mr',  'Miss','Miss','Mr',  'Mrs', 'Mrs',
+         'Mr',  'Mr',  'Mrs', 'Mr',  'Mrs', 'Mr',  'Miss','Mr',  'Miss','Mr', 
+         'Mr',  'Mr',  'Master', 'Mr',  'Master', 'Mr',  'Master', 'Miss','Mr','Mrs',
+         'Miss','Master' ,'Col', 'Miss','Mr',  'Mr',  'Miss','Mr',  'Miss','Mr', 
+         'Mr',  'Mr',  'Mr',  'Mrs', 'Miss','Mr',  'Miss','Mr',  'Mrs', 'Mr', 
+         'Miss','Mr',  'Mrs', 'Mr',  'Mrs', 'Mrs', 'Mr',  'Miss','Mr',  'Mr', 
+         'Mr',  'Miss','Mr',  'Mr',  'Mr',  'Mr',  'Mr',  'Mr',  'Miss','Mrs',
+         'Mrs', 'Mrs', 'Mr',  'Mr',  'Master', 'Mr',  'Mrs', 'Mr',  'Mrs', 'Mrs',
+         'Miss','Mr',  'Mr',  'Mr',  'Mr',  'Mr',  'Mr',  'Mr',  'Miss','Mr', 
+         'Mr',  'Mr',  'Mrs', 'Miss','Mr',  'Mr',  'Mr',  'Mr',  'Miss','Mr', 
+         'Mr',  'Mr',  'Mrs', 'Miss','Mr',  'Miss','Mr',  'Mr',  'Mr',  'Mr', 
+         'Miss','Master', 'Miss','Miss','Miss','Mr',  'Mr',  'Mr',  'Mr',  'Mr', 
+         'Mr',  'Miss','Mr',  'Dr',  'Mr',  'Mr',  'Miss','Mr',  'Mr',  'Mr', 
+         'Mr',  'Mr',  'Mr',  'Mr',  'Miss','Mrs', 'Mr',  'Master', 'Mr',  'Mrs',
+         'Mr',  'Mr',  'Mr',  'Miss','Mrs', 'Miss','Mr',  'Mr',  'Mr',  'Mr', 
+         'Mr',  'Mr',  'Mr',  'Mr',  'Miss','Mr',  'Miss','Mr',  'Mr',  'Mr', 
+         'Mrs', 'Mr',  'Mr',  'Mrs', 'Mr',  'Mr',  'Mr',  'Mr',  'Mr',  'Master',
+         'Mr',  'Mr',  'Mr',  'Mrs', 'Master', 'Miss','Mr',  'Mrs', 'Mr',  'Miss',  
+         'Mrs', 'Mr',  'Mr',  'Mr',  'Miss','Mr',  'Mrs', 'Mr',  'Mr',  'Mrs',
+         'Master', 'Mrs', 'Mrs', 'Mr',  'Mrs', 'Mrs', 'Mr',  'Miss','Mrs', 'Mr', 
+         'Mr',  'Miss','Mr',  'Mr',  'Mrs', 'Miss','Miss','Mr',  'Mr',  'Master',
+         'Mr',  'Mr',  'Mrs', 'Mrs', 'Mr',  'Miss','Mr',  'Mr',  'Mr',  'Master',
+         'Mr',  'Mrs', 'Master', 'Mr',  'Mr',  'Mrs', 'Mr',  'Mrs', 'Mr',  'Mr', 
+         'Miss','Mr',  'Miss','Mr',  'Mr',  'Mr',  'Mr',  'Mr',  'Miss','Miss',  
+         'Miss','Mrs', 'Miss','Mr',  'Lady','Mr',  'Mr',  'Master')
+
+
+#new data frame with title
+train_new<-cbind(train,title)
+test_new<-cbind(test,title)
+
+# Finish the command
+my_tree_five <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + title,
+                      data = train_new, method = "class")
+
+# Visualize my_tree_five
+fancyRpartPlot(my_tree_five)
+
+# Make prediction
+my_prediction <- predict(my_tree_five, test_new, type = "class")
+
+# Make results ready for submission
+my_solution <- data.frame(PassengerId = test_new$PassengerId, Survived = my_prediction)
+write.csv(my_solution, file = "my_solution.csv", row.names = FALSE)
+
+############# Random Forest ###############
+###########################################
+library(plyr)
+all_data<-rbind.fill(train_new,test_new)
+
+# Passenger on row 62 and 830 do not have a value for embarkment.
+# Since many passengers embarked at Southampton, we give them the value S.
+table(all_data$Embarked)
+
+#    C   Q   S 
+# 0 270 123 916 
+
+all_data$Embarked[c(62, 830)] <- "S"
+
+# Factorize embarkment codes.
+all_data$Embarked <- factor(all_data$Embarked)
+
+# Passenger on row 1044 has an NA Fare value. Let's replace it with the median fare value.
+all_data$Fare[1044] <- median(all_data$Fare, na.rm = TRUE)
+
+#combine all the data into one
+all_data$family_size <- all_data$SibSp + all_data$Parch + 1
+all_data<- all_data[-c(13)]
+
+# How to fill in missing Age values?
+# We make a prediction of a passengers Age using the other variables and a decision tree model.
+# This time you give method = "anova" since you are predicting a continuous variable.
+library(rpart)
+predicted_age <- rpart(Age ~ Pclass + Sex + SibSp + Parch + Fare + Embarked + title + family_size,
+                       data = all_data[!is.na(all_data$Age),], method = "anova")
+all_data$Age[is.na(all_data$Age)] <- predict(predicted_age, all_data[is.na(all_data$Age),])
+
+# Split the data back into a train set and a test set
+train_rf <- all_data[1:891,]
+test_rf <- all_data[892:1309,]
+
+
+# Load in the package
+library(randomForest)
+
+# Set seed for reproducibility
+set.seed(111)
+
+# Apply the Random Forest Algorithm
+my_forest <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare
+                          + Embarked + title,
+                          data = train_rf, importance = TRUE, ntree = 1000)
+
+# Make your prediction using the test set
+my_prediction <- predict(my_forest, test_rf)
+
+# Create a data frame with two columns: PassengerId & Survived. Survived contains your predictions
+my_solution <- data.frame(PassengerId = test_rf$PassengerId, Survived = my_prediction)
+
+# Write your solution away to a csv file with the name my_solution.csv
+write.csv(my_solution, file = "my_solution.csv", row.names = FALSE)
+
+# When running the function, two graphs appear: the accuracy plot shows how much worse 
+# the model would perform without the included variables. So a 
+# high decrease (= high value x-axis) links to a high predictive variable. 
+# The second plot is the Gini coefficient. The higher the variable scores here, 
+#the more important it is for the model.
+
+varImpPlot(my_forest)
+
+
+
+
+
