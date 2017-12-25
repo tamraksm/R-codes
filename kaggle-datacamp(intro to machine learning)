@@ -1,5 +1,6 @@
 # R-codes
 R-codes for basic machine learning, big data and other 
+
 ##  Once you're familiar with the Kaggle data sets, you make your first predictions
 ##  using survival rate, gender data, as well as age data.
 
@@ -132,6 +133,7 @@ my_tree_four <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Emb
 # Visualize your new decision tree
 fancyRpartPlot(my_tree_four)
 
+#run first title and then run train_new and run second title and then run test_new
 title<-c( 'Mr','Mrs','Miss','Mrs','Mr','Mr','Mr','Master','Mrs','Mrs',
           'Miss','Miss','Mr','Mr','Miss','Mrs','Master','Mr','Mrs','Mrs',
           'Mr','Mr','Miss','Mr','Miss','Mrs','Mr','Mr','Miss','Mr',
@@ -286,8 +288,16 @@ write.csv(my_solution, file = "my_solution.csv", row.names = FALSE)
 
 ############# Random Forest ###############
 ###########################################
+
+# rbind.fill helps us to stack the rows although it has different number of variables in
+# the data set.Changing all the missing values with "NA"
 library(plyr)
 all_data<-rbind.fill(train_new,test_new)
+all_data[all_data==""] = NA
+
+# selects the number of NA in the model and then puts them in the decreasing order
+na.cols <- which(colSums(is.na(all_data)) > 0)
+sort(colSums(sapply(all_data[na.cols], is.na)), decreasing = TRUE)
 
 # Passenger on row 62 and 830 do not have a value for embarkment.
 # Since many passengers embarked at Southampton, we give them the value S.
@@ -295,6 +305,9 @@ table(all_data$Embarked)
 
 #    C   Q   S 
 # 0 270 123 916 
+
+#which observation is missing the Embarked
+which(is.na(all_data$Embarked))
 
 all_data$Embarked[c(62, 830)] <- "S"
 
@@ -348,6 +361,12 @@ write.csv(my_solution, file = "my_solution.csv", row.names = FALSE)
 #the more important it is for the model.
 
 varImpPlot(my_forest)
+
+
+
+unique(all_data$Embarked)
+
+
 
 
 
